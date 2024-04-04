@@ -1,0 +1,12 @@
+# Misc
+log/
+*.png~
+*.kra~
+
+# Python
+.env/
+venv/
+.pytest_cache/
+__pycache__/
+lib/
+*.egg-info/
