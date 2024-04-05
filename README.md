@@ -30,6 +30,7 @@ An attempt to understand the datasets that have come before us.
 | AB-XY Game                      |                                            |                                                                                         |
 | FSM Game                        | generate strings according to grammar      |                                                                                         |
 | Adaptive Grammar                | grammar rule might change                  |                                                                                         |
+| String/Graph Rewriting          |                                            | [`string_rewriting.py`](./src/neurallambda_data/string_rewriting.py)                    |
 |                                 |                                            |                                                                                         |
 | **AGENT/TOOL**                  |                                            |                                                                                         |
 | THUDM AgentInstruct             | long form dialogs                          | [`[1]`](https://huggingface.co/datasets/THUDM/AgentInstruct)                            |
