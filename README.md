@@ -54,7 +54,7 @@ An attempt to understand the datasets that have come before us.
 | (*) im a strange dataset        | Tough for LLMs because of self-references. | [`[1]`](https://github.com/TristanThrush/i-am-a-strange-dataset)                        |
 | DiagGSM8k                       | NL Reasoning Benchmark                     | [`[1]`](https://github.com/dvlab-research/MR-GSM8K)                                     |
 | CLadder                         | Causal reasoning                           | [`[1]`](https://huggingface.co/datasets/causalnlp/CLadder)                              |
-| Cause-Effect Pairs              | 108 datasets of 2 var dyanmics (not NL)    | [`[1]`](https://webdav.tuebingen.mpg.de/cause-effect/)                                  |
+| Cause-Effect Pairs              | 108 datasets of 2 var dynamics (not NL)    | [`[1]`](https://webdav.tuebingen.mpg.de/cause-effect/)                                  |
 |                                 |                                            |                                                                                         |
 |                                 |                                            |                                                                                         |
 | **NATURAL LANGUAGE**            |                                            |                                                                                         |
