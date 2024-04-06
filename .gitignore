@@ -10,3 +10,7 @@ venv/
 __pycache__/
 lib/
 *.egg-info/
+
+
+# Haskell
+dist-newstyle/
