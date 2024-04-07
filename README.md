@@ -31,6 +31,7 @@ An attempt to understand the datasets that have come before us.
 | FSM Game                        | generate strings according to grammar      |                                                                                         |
 | Adaptive Grammar                | grammar rule might change                  |                                                                                         |
 | String/Graph Rewriting          |                                            | [`string_rewriting.py`](./src/neurallambda_data/string_rewriting.py)                    |
+| LibraryOfLogic                  | generate NL from multiple games            | [`[1]`](https://github.com/nagolinc/LibraryOfLogic)                                     |
 |                                 |                                            |                                                                                         |
 | **AGENT/TOOL**                  |                                            |                                                                                         |
 | THUDM AgentInstruct             | long form dialogs                          | [`[1]`](https://huggingface.co/datasets/THUDM/AgentInstruct)                            |
@@ -44,6 +45,7 @@ An attempt to understand the datasets that have come before us.
 | EvoEval Tool Use                | 100 prompt + code + tests                  | [`[1]`](https://huggingface.co/datasets/evoeval/EvoEval_tool_use)                       |
 |                                 |                                            |                                                                                         |
 | **MATH/LOGIC**                  |                                            |                                                                                         |
+| gsm8k                           | Grade School Math 8k                       | [`[1]`](https://huggingface.co/datasets/gsm8k)                                          |
 | MetaMath                        | one-shot math                              | [`[1]`](https://github.com/meta-math/MetaMath)                                          |
 | MetaMathFewShot                 | few-shot math                              | [`[1]`](https://huggingface.co/datasets/abacusai/MetaMathFewshot)                       |
 | MathPile                        | 9B tok from filtered internet              | [`[1]`](https://huggingface.co/datasets/GAIR/MathPile)                                  |
