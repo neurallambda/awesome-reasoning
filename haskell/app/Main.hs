@@ -238,6 +238,19 @@ anbn '$' Q2 (Just 'A')   = PDATransition () QReject NullOp
 -- For any other input or state configuration, move to QReject
 anbn _ _ _               = PDATransition () QReject NullOp
 
+
+
+----------
+-- * Go
+
+showSeq :: Show a => Seq a -> String
+showSeq xs = "{" ++ intercalate ", " (show <$> toList xs) ++ "}"
+
+formatPDAResult :: ([()], [Q], [Seq Char]) -> String
+formatPDAResult (outs, states, stack) =
+  let finalState = last states
+  in "Final state: " ++ show finalState ++ " | " ++ show (showSeq <$> stack)
+
 main :: IO ()
 main = do
   -- FSM
@@ -257,11 +270,3 @@ main = do
         "^$"]
   putStrLn "Example strings:"
   mapM_ (putStrLn . formatPDAResult . (\x -> runPDA (pda anbn) x Q0)) exampleStrings
-
-showSeq :: Show a => Seq a -> String
-showSeq xs = "{" ++ intercalate ", " (show <$> toList xs) ++ "}"
-
-formatPDAResult :: ([()], [Q], [Seq Char]) -> String
-formatPDAResult (outs, states, stack) =
-  let finalState = last states
-  in "Final state: " ++ show finalState ++ " | " ++ show (showSeq <$> stack)
