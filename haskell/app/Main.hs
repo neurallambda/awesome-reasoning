@@ -51,17 +51,15 @@ Multi-tape, with k tapes:
 
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
--- {-# LANGUAGE OverlappingInstances #-}
 
 module Main where
 
 import Data.Sequence (Seq, ViewL(..), (<|))
 import qualified Data.Sequence as Seq
-import Data.Foldable (toList)
+import Data.Foldable ( toList, foldl' )
 import Data.List (intercalate)
 import qualified Data.Map as M
 import Data.Kind (Type)
-import Data.Foldable (foldl')
 import Data.Map.Extra (lookupMatchAny, Any(..), MatchAny(..))
 
 
@@ -97,28 +95,6 @@ class Machine m a (s :: Type) where
   action :: R m a s -> S m a s -> S m a s
   mkInput :: a -> S m a s -> L m a s
 
-
--- -- | Run a machine on an input symbol
--- execStep :: (Machine m a s, Ord (L m a s), Show (L m a s))
---   => M.Map (L m a s) (R m a s) -- transition table
---   -> a -- single input
---   -> S m a s -- state
---   -> S m a s -- new state
--- execStep table input st =
---   case M.lookup (mkInput input st) table of
---     Just transition -> action transition st
---     Nothing -> error $ "transition not found: " ++ show (mkInput input st)
-
-
--- -- | Run a machine on a list of input symbols
--- execMachine :: (Machine m a s, Ord (L m a s), Show (L m a s))
---   => M.Map (L m a s) (R m a s) -- transition table
---   -> [a] -- input symbols
---   -> S m a s -- initial state
---   -> S m a s
--- execMachine table input initialState = foldr (execStep table) initialState input
-
-
 -- | Run a machine on an input symbol
 runStep :: (Machine m a s, Ord (L m a s), Show (L m a s), MatchAny (L m a s))
   => M.Map (L m a s) (R m a s) -- transition table
@@ -149,7 +125,7 @@ runMachine table initialState = foldl' f (error "empty input", initialState)
 
 data PDA s
 
-data PDAOp stack = NullOp | Push stack | Pop deriving (Eq, Ord, Show)
+data PDAOp stack = NullOp | Push !stack | Pop deriving (Eq, Ord, Show)
 
 instance Machine PDA a (state, stack) where
   data L PDA a (state, stack) = PDAL (Any a) (Any state) (Maybe (Any stack)) deriving (Show, Ord, Eq)
@@ -160,11 +136,9 @@ instance Machine PDA a (state, stack) where
   action (PDAR newState (Push x)) (PDAS _ stack) = PDAS newState (x Data.Sequence.<| stack)
   action (PDAR newState Pop) (PDAS _ stack) = PDAS newState (Seq.drop 1 stack)
 
-  mkInput a (PDAS st sk) = PDAL (A a) (A st) (A <$> (viewl sk))
+  mkInput a (PDAS st sk) = PDAL (A a) (A st) (A <$> viewl sk)
 
-
--- needs OverlappingInstances
-instance (MatchAny a, MatchAny state, Eq stack, Eq a, MatchAny Char) => MatchAny (L PDA a (state, stack)) where
+instance (Eq state, Eq stack, Eq a) => MatchAny (L PDA a (state, stack)) where
   matchAny (PDAL x0 x1 x2) (PDAL y0 y1 y2) = matchAny (x0, x1, x2) (y0, y1, y2)
 
 
@@ -181,19 +155,13 @@ data Q =
   | QReject
   deriving (Eq, Show, Ord)
 
-
--- TODO: this is messy
-instance MatchAny Q where
-  matchAny x y = x == y
-
-instance MatchAny Char where
-  matchAny x y = x == y
+instance MatchAny Q where matchAny x y = x == y
 
 
 -- | Grammar for: a^nb^n
 anbnTransitions :: [(L PDA Char (Q, Char), R PDA a (Q, Char))]
 anbnTransitions = [
-    (PDAL (A '^') (A Q0) Nothing,    PDAR Q1 (Push '$')),
+    (PDAL (A '^') (A Q0) Nothing, PDAR Q1 (Push '$')),
     (PDAL (A '$') (A Q1) (Just $ A '$'), PDAR QAccept Pop),
     (PDAL (A 'a') (A Q1) (Just $ A '$'), PDAR Q1 (Push 'A')),
     (PDAL (A 'a') (A Q1) (Just $ A 'A'), PDAR Q1 (Push 'A')),
@@ -212,7 +180,7 @@ anbnTransitions = [
 showSeq :: Show a => Data.Sequence.Seq a -> String
 showSeq xs = "{" ++ intercalate ", " (show <$> toList xs) ++ "}"
 
---formatPDAResult :: (R PDA Char (Q, Char), S PDA Char (Q, Char)) -> String
+formatPDAResult :: (R PDA Char (Q, Char), S PDA Char (Q, Char)) -> String
 formatPDAResult (_, PDAS finalState stack) =
   "Final state: " ++ show finalState ++ " | Stack: " ++ showSeq stack
 
@@ -230,7 +198,7 @@ main = do
         "^ab$",
         "^$"]
   putStrLn "PDA Example strings:"
-  mapM_ (putStrLn . formatPDAResult . (\x -> runMachine trans (PDAS Q0 Seq.empty) x)) exampleStrings
+  mapM_ (putStrLn . formatPDAResult . runMachine trans (PDAS Q0 Seq.empty)) exampleStrings
 
   -- -- Generate valid PDA strings
   -- putStrLn "----------"
