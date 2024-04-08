@@ -59,6 +59,9 @@ import Control.Arrow
 import Data.MonadicStreamFunction
 import Data.Foldable (toList)
 import Data.List (intercalate)
+import qualified Data.Map as M
+import System.Random (randomRIO)
+
 
 --------------------------------------------------
 -- * Util
@@ -158,15 +161,8 @@ countA _ count   = FSMTransition () count
 --------------------------------------------------
 -- * Push down automata
 
-data Q =
-  Q0
-  | Q1
-  | Q2
-  | Q3
-  | Q4
-  | QAccept
-  | QReject
-  deriving (Eq, Show)
+
+-- * Push down automata
 
 data PDAOp s =
   NullOp
@@ -182,62 +178,70 @@ data PDATransition b state stack = PDATransition {
   }
 
 type PDAState state stack = (state, Seq stack)
+type TransitionTable state stack = M.Map (state, Maybe stack) (M.Map Char (PDATransition () state stack))
 
--- | Construct an FSM from a transition function
-pda ::
-  (a -> state -> Maybe stack -> PDATransition b state stack)
-  -> MSF (State (PDAState state stack)) a b
-pda f = arrM (\a -> do
-                 (st, sk) <- get
-                 let PDATransition b st' skOp = f a st (viewl sk)
-                 case skOp of
-                   NullOp -> put (st', sk)
-                   Push x -> put (st', x <| sk)
-                   Pop -> put (st', Seq.drop 1 sk)
+-- | Run a PDA on an input string
+runPDA :: (Ord state, Ord stack) => TransitionTable state stack -> [Char] -> state -> (Maybe state, Seq stack)
+runPDA table input initialState = go input initialState Seq.empty
+  where
+    go [] state stack = (Just state, stack)
+    go (c:cs) state stack =
+      case M.lookup (state, viewl stack) table >>= M.lookup c of
+        Just (PDATransition _ nextState op) ->
+          let stack' = case op of
+                         NullOp -> stack
+                         Push x -> x <| stack
+                         Pop    -> Seq.drop 1 stack
+          in go cs nextState stack'
+        Nothing -> (Nothing, stack)
 
-                 pure b)
 
--- | Upgrade an MSF to also output it's state
-outputState' :: MSF (State s) a b -> MSF (State s) a (b, s)
-outputState' msf = proc a -> do
-  b <- msf -< a
-  s <- arrM gets -< id
-  returnA -< (b, s)
 
--- | Run an FSM and keep a list of outputs and states
-runPDA :: MSF (State (PDAState state stack)) a b -> [a] -> state -> ([b], [state], [Seq stack])
-runPDA msf input initialSt = let
-  msf' = proc a -> do
-    b <- msf -< a
-    (st, sk) <- arrM gets -< id
-    returnA -< (b, st, sk)
-  out = evalState (embed msf' input) (initialSt, Seq.empty)
-  in unzip3 out
+-- | Generate a valid string from a PDA
+generateString :: (Ord state, Ord stack) => TransitionTable state stack -> state -> Seq stack -> Int -> IO (Maybe String)
+generateString table state stack maxDepth = go state stack [] 0
+  where
+    go state stack str depth
+      | depth > maxDepth = pure $ Just (reverse str)
+      | otherwise = do
+          let transitions = M.findWithDefault M.empty (state, viewl stack) table
+          if M.null transitions
+            then pure $ Just (reverse str)
+            else do
+              let inputs = M.keys transitions
+              i <- randomRIO (0, length inputs - 1)
+              let c = inputs !! i
+                  PDATransition _ nextState op = transitions M.! c
+                  stack' = case op of
+                             NullOp -> stack
+                             Push x -> x <| stack
+                             Pop    -> Seq.drop 1 stack
+              go nextState stack' (c:str) (depth + 1)
 
-anbn ::
-  Char
-  -> Q    -- state
-  -> Maybe Char -- stack
-  -> PDATransition () Q Char
--- If the input is '^' and the state is Q0 with an empty stack, push '$' onto the stack and move to Q1
-anbn '^' Q0 Nothing      = PDATransition () Q1 (Push '$')
--- If the input is '$' and the state is Q1 with '$' on the stack, move to QAccept and pop '$'
-anbn '$' Q1 (Just '$')   = PDATransition () QAccept Pop
--- If the input is 'a' and the state is Q1 with '$' on the stack, push 'A' onto the stack and stay in Q1
-anbn 'a' Q1 (Just '$')   = PDATransition () Q1 (Push 'A')
--- If the input is 'a' and the state is Q1 with 'A' on the stack, push 'A' onto the stack and stay in Q1
-anbn 'a' Q1 (Just 'A')   = PDATransition () Q1 (Push 'A')
--- If the input is 'b' and the state is Q1 with 'A' on the stack, pop 'A' from the stack and move to Q2
-anbn 'b' Q1 (Just 'A')   = PDATransition () Q2 Pop
--- If the input is 'b' and the state is Q2 with 'A' on the stack, pop 'A' from the stack and stay in Q2
-anbn 'b' Q2 (Just 'A')   = PDATransition () Q2 Pop
--- If the input is '$' and the state is Q2 with '$' on the stack, move to QAccept and pop '$'
-anbn '$' Q2 (Just '$')   = PDATransition () QAccept Pop
--- If the input is '$' and the state is Q2 with 'A' on the stack, move to QReject
-anbn '$' Q2 (Just 'A')   = PDATransition () QReject NullOp
--- For any other input or state configuration, move to QReject
-anbn _ _ _               = PDATransition () QReject NullOp
 
+----------
+-- * Example
+
+data Q =
+  Q0
+  | Q1
+  | Q2
+  | Q3
+  | Q4
+  | QAccept
+  | QReject
+  deriving (Eq, Show, Ord)
+
+buildTransitionTable :: TransitionTable Q Char
+buildTransitionTable = M.fromList [
+    ((Q0, Nothing),      M.fromList [('^', PDATransition () Q1 (Push '$'))]),
+    ((Q1, Just '$'),     M.fromList [('$', PDATransition () QAccept Pop),
+                                     ('a', PDATransition () Q1 (Push 'A'))]),
+    ((Q1, Just 'A'),     M.fromList [('a', PDATransition () Q1 (Push 'A')),
+                                     ('b', PDATransition () Q2 Pop)]),
+    ((Q2, Just 'A'),     M.fromList [('b', PDATransition () Q2 Pop)]),
+    ((Q2, Just '$'),     M.fromList [('$', PDATransition () QAccept Pop)])
+  ]
 
 
 ----------
@@ -246,27 +250,30 @@ anbn _ _ _               = PDATransition () QReject NullOp
 showSeq :: Show a => Seq a -> String
 showSeq xs = "{" ++ intercalate ", " (show <$> toList xs) ++ "}"
 
-formatPDAResult :: ([()], [Q], [Seq Char]) -> String
-formatPDAResult (outs, states, stack) =
-  let finalState = last states
-  in "Final state: " ++ show finalState ++ " | " ++ show (showSeq <$> stack)
+formatPDAResult :: (Maybe Q, Seq Char) -> String
+formatPDAResult (finalState, stack) =
+  "Final state: " ++ show finalState ++ " | Stack: " ++ showSeq stack
 
 main :: IO ()
 main = do
-  -- FSM
-  putStrLn "----------"
-  putStrLn "-- FSM"
-  let str = "aaabaa"
-  print $ runFSM (fsm countA) str 0
-
   -- PDA
   putStrLn "----------"
   putStrLn "-- PDA"
-  let exampleStrings = [
+  let transitionTable = buildTransitionTable
+      exampleStrings = [
         "^aaabbb$",
         "^aabbb$",
         "^aaabb$",
         "^ab$",
         "^$"]
   putStrLn "Example strings:"
-  mapM_ (putStrLn . formatPDAResult . (\x -> runPDA (pda anbn) x Q0)) exampleStrings
+  mapM_ (putStrLn . formatPDAResult . (\x -> runPDA transitionTable x Q0)) exampleStrings
+
+  -- Generate valid strings
+  putStrLn "----------"
+  putStrLn "-- Generate valid strings"
+  replicateM_ 5 $ do
+    result <- generateString transitionTable Q0 Seq.empty 100
+    case result of
+      Just str -> putStrLn str
+      Nothing  -> putStrLn "Failed to generate a valid string"

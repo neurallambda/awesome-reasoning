@@ -43,6 +43,7 @@ library
         base ^>=4.17.2.1,
         mtl,
         containers,
+        random,
         dunai
 
     -- Directories containing source files.
@@ -69,6 +70,7 @@ executable haskell
         base ^>=4.17.2.1,
         mtl,
         containers,
+        random,
         dunai,
         neurallambda-data
 
