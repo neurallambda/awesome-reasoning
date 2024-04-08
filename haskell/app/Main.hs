@@ -87,81 +87,6 @@ dropr i s = fst $ splitAtR i s
 
 
 --------------------------------------------------
--- * Finite State Machine
-
-data FSMTransition out state = FSMTransition {
-  fsmtOut :: !out,
-  fsmNewState :: !state
-  } deriving Show
-
--- | Construct an FSM from a transition function
-fsm :: (a -> s -> FSMTransition b s) -> MSF (State s) a b
-fsm f = arrM (\a -> do
-                 s <- get
-                 let FSMTransition b s' = f a s
-                 put s'
-                 pure b)
-
--- | Upgrade an MSF to also output it's state
-outputState :: MSF (State s) a b -> MSF (State s) a (b, s)
-outputState msf = proc a -> do
-  b <- msf -< a
-  s <- arrM gets -< id
-  returnA -< (b, s)
-
--- | Run an FSM and keep a list of outputs and states
-runFSM :: MSF (State s) a b -> [a] -> s -> ([b], [s])
-runFSM msf input initialS = let
-  out = evalState (embed (outputState msf) input) initialS
-  in unzip out
-
--- | Run an FSM to it's final output and state
-runFSM' :: MSF (State s) a b -> [a] -> s -> (b, s)
-runFSM' msf input initialS = let
-  out = evalState (embed (outputState msf) input) initialS
-  in (fst (last out), snd (last out))
-
--- | Evaluate an FSM and collect its outputs (not state)
-evalFSM :: MSF (State s) a b -> [a] -> s -> [b]
-evalFSM msf input initialS = let
-  out = evalState (embed msf input) initialS
-  in out
-
--- | Evaluate an FSM to its final output
-evalFSM' :: MSF (State s) a b -> [a] -> s -> b
-evalFSM' msf input initialS = let
-  out = evalState (embed msf input) initialS
-  in last out
-
--- | Evaluate an FSM and collect its states (not outputs)
-execFSM :: MSF (State s) a b -> [a] -> s -> [s]
-execFSM msf input initialS = let
-  msf' = proc a -> do
-    _ <- msf -< a
-    arrM gets -< id
-  out = evalState (embed msf' input) initialS
-  in out
-
--- | Evaluate an FSM to its final state
-execFSM' :: MSF (State s) a b -> [a] -> s -> s
-execFSM' msf input initialS = let
-  msf' = proc a -> do
-    _ <- msf -< a
-    arrM gets -< id
-  out = evalState (embed msf' input) initialS
-  in last out
-
-
--- | Example FSM for counting a's
-countA :: Char -> Int -> FSMTransition () Int
-countA 'a' count = FSMTransition () (count + 1)
-countA _ count   = FSMTransition () count
-
-
---------------------------------------------------
--- * Push down automata
-
-
 -- * Push down automata
 
 data PDAOp s =
@@ -178,6 +103,7 @@ data PDATransition b state stack = PDATransition {
   }
 
 type PDAState state stack = (state, Seq stack)
+
 type TransitionTable state stack = M.Map (state, Maybe stack) (M.Map Char (PDATransition () state stack))
 
 -- | Run a PDA on an input string
@@ -196,8 +122,7 @@ runPDA table input initialState = go input initialState Seq.empty
         Nothing -> (Nothing, stack)
 
 
-
--- | Generate a valid string from a PDA
+-- | Generate a valid string from a grammar
 generateString :: (Ord state, Ord stack) => TransitionTable state stack -> state -> Seq stack -> Int -> IO (Maybe String)
 generateString table state stack maxDepth = go state stack [] 0
   where
@@ -256,6 +181,7 @@ formatPDAResult (finalState, stack) =
 
 main :: IO ()
 main = do
+
   -- PDA
   putStrLn "----------"
   putStrLn "-- PDA"
@@ -266,14 +192,14 @@ main = do
         "^aaabb$",
         "^ab$",
         "^$"]
-  putStrLn "Example strings:"
+  putStrLn "PDA Example strings:"
   mapM_ (putStrLn . formatPDAResult . (\x -> runPDA transitionTable x Q0)) exampleStrings
 
-  -- Generate valid strings
+  -- Generate valid PDA strings
   putStrLn "----------"
-  putStrLn "-- Generate valid strings"
+  putStrLn "-- Generate valid PDA strings"
   replicateM_ 5 $ do
     result <- generateString transitionTable Q0 Seq.empty 100
     case result of
       Just str -> putStrLn str
-      Nothing  -> putStrLn "Failed to generate a valid string"
+      Nothing  -> putStrLn "Failed to generate a valid PDA string"
