@@ -44,7 +44,6 @@ library
         mtl,
         containers,
         random,
-        dunai
 
     -- Directories containing source files.
     hs-source-dirs:   src
@@ -71,7 +70,6 @@ executable haskell
         mtl,
         containers,
         random,
-        dunai,
         neurallambda-data
 
     -- Directories containing source files.

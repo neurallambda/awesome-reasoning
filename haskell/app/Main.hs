@@ -7,141 +7,154 @@ Generate sentences in given grammars.
 NOTES:
 
 Mealy Machine (FSM): 6-tuple (Q, Σ, Δ, δ, λ, q₀), where:
-- Q is a finite set of states
-- Σ is a finite set of input symbols (the input alphabet)
-- Δ is a finite set of output symbols (the output alphabet)
+- Q : states
+- Σ : input symbols
+- Δ : output symbols
 - δ : Q × Σ → Q is the state transition function
 - λ : Q × Σ → Δ is the output function
 - q₀ ∈ Q is the initial state
 
 Moore Machine (FSM): 6-tuple (Q, Σ, Δ, δ, λ, q₀), where:
-- Q is a finite set of states
-- Σ is a finite set of input symbols (the input alphabet)
-- Δ is a finite set of output symbols (the output alphabet)
+- Q : states
+- Σ : input symbols
+- Δ : output symbols
 - δ : Q × Σ → Q is the state transition function
 - λ : Q → Δ is the output function
-- q₀ ∈ Q is the initial state
+- q₀ ∈ Q
 
 Pushdown Automaton (PDA): 7-tuple (Q, Σ, Γ, δ, q₀, Z₀, F), where:
-- Q is a finite set of states
-- Σ is a finite set of input symbols (the input alphabet)
-- Γ is a finite set of stack symbols (the stack alphabet)
+- Q : states
+- Σ : input symbols
+- Γ : stack symbols (the stack alphabet)
 - δ : Q × (Σ ∪ {ε}) × Γ → P(Q × Γ*) is the transition function
-- q₀ ∈ Q is the initial state
+- q₀ ∈ Q
 - Z₀ ∈ Γ is the initial stack symbol
 - F ⊆ Q is the set of accepting/final states
 
 Turing Machine (TM) with Queue: 8-tuple (Q, Σ, Γ, δ, q₀, q_acc, q_rej, □), where:
-- Q is a finite set of states
-- Σ is a finite set of input symbols (the input alphabet)
-- Γ is a finite set of queue symbols (the queue alphabet), where Σ ⊆ Γ and □ ∈ Γ \ Σ (□ is the blank symbol)
+- Q : states
+- Σ : input symbols
+- Γ : queue symbols (the queue alphabet), where Σ ⊆ Γ and □ ∈ Γ \ Σ (□ is the blank symbol)
 - δ : Q × Γ → Q × (Γ ∪ {ε}) × {EnqL, EnqR, DeqL, DeqR} is the transition function
-- q₀ ∈ Q is the initial state
+- q₀ ∈ Q
 - q_acc ∈ Q is the accepting state
 - q_rej ∈ Q is the rejecting state
 - □ is the blank symbol
 
+Queue Automaton, Γ is head, Γ* is queue:
+δ : Q × Γ → Q × Γ*
+
+Multi-tape, with k tapes:
+δ : Q × Γ_k → Q × Γ_k × { L , R }
+
 -}
 
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE Arrows #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Main where
 
-import Control.Monad.Identity
-import Control.Monad.State
-import Data.Sequence (Seq, ViewL(..), (<|), (|>))
+import Data.Sequence (Seq, ViewL(..), (<|))
 import qualified Data.Sequence as Seq
-import Control.Arrow
-import Data.MonadicStreamFunction
 import Data.Foldable (toList)
 import Data.List (intercalate)
 import qualified Data.Map as M
-import System.Random (randomRIO)
+import Data.Kind (Type)
+import Data.Foldable (foldl')
 
 
 --------------------------------------------------
 -- * Util
 
-viewl :: Seq.Seq a -> Maybe a
+viewl :: Data.Sequence.Seq a -> Maybe a
 viewl s = case Seq.viewl s of
-  Seq.EmptyL -> Nothing
-  (x Seq.:< _) -> Just x
+  Data.Sequence.EmptyL -> Nothing
+  (x Data.Sequence.:< _) -> Just x
 
-viewr :: Seq.Seq a -> Maybe a
+viewr :: Data.Sequence.Seq a -> Maybe a
 viewr s = case Seq.viewr s of
   Seq.EmptyR -> Nothing
   (_ Seq.:> x) -> Just x
 
-splitAtR :: Int -> Seq.Seq a -> (Seq.Seq a, Seq.Seq a)
+splitAtR :: Int -> Data.Sequence.Seq a -> (Data.Sequence.Seq a, Data.Sequence.Seq a)
 splitAtR i s = Seq.splitAt (length s - i) s
 
-taker :: Int -> Seq.Seq a -> Seq.Seq a
+taker :: Int -> Data.Sequence.Seq a -> Data.Sequence.Seq a
 taker i s = snd $ splitAtR i s
 
-dropr :: Int -> Seq.Seq a -> Seq.Seq a
+dropr :: Int -> Data.Sequence.Seq a -> Data.Sequence.Seq a
 dropr i s = fst $ splitAtR i s
+
+--------------------------------------------------
+-- * Machine Definition
+
+class Machine m a (s :: Type) where
+  data L m a s
+  data R m a s
+  data S m a s
+  action :: R m a s -> S m a s -> S m a s
+  mkInput :: a -> S m a s -> L m a s
+
+
+-- | Run a machine on an input symbol
+execStep :: (Machine m a s, Ord (L m a s), Show (L m a s))
+  => M.Map (L m a s) (R m a s) -- transition table
+  -> a -- single input
+  -> S m a s -- state
+  -> S m a s -- new state
+execStep table input st =
+  case M.lookup (mkInput input st) table of
+    Just transition -> action transition st
+    Nothing -> error $ "transition not found: " ++ show (mkInput input st)
+
+
+-- | Run a machine on a list of input symbols
+execMachine :: (Machine m a s, Ord (L m a s), Show (L m a s))
+  => M.Map (L m a s) (R m a s) -- transition table
+  -> [a] -- input symbols
+  -> S m a s -- initial state
+  -> S m a s
+execMachine table input initialState = foldr (execStep table) initialState input
+
+
+-- | Run a machine on an input symbol
+runStep :: (Machine m a s, Ord (L m a s), Show (L m a s))
+  => M.Map (L m a s) (R m a s) -- transition table
+  -> S m a s -- state
+  -> a -- single input
+  -> (R m a s, S m a s) -- (transition value, new state)
+runStep table st input =
+  case M.lookup (mkInput input st) table of
+    Just transition -> (transition, action transition st)
+    Nothing -> error $ "transition not found: " ++ show (mkInput input st)
+
+-- | Run a machine on a list of input symbols
+runMachine :: (Machine m a s, Ord (L m a s), Show (L m a s))
+  => M.Map (L m a s) (R m a s) -- transition table
+  -> S m a s -- initial state
+  -> [a] -- input symbols
+  -> (R m a s, S m a s)
+runMachine table initialState = foldl' f (error "empty input", initialState)
+  where f (_, state) = runStep table state
 
 
 --------------------------------------------------
 -- * Push down automata
 
-data PDAOp s =
-  NullOp
-  | Push !s
-  | Pop
-  deriving (Eq, Show)
+data PDA s
 
--- | Pushdown Automaton (PDA)
-data PDATransition b state stack = PDATransition {
-  pdaOutput :: !b,
-  pdaState :: !state,
-  pdaStack :: !(PDAOp stack)
-  }
+data PDAOp stack = NullOp | Push stack | Pop deriving (Eq, Ord, Show)
 
-type PDAState state stack = (state, Seq stack)
+instance Machine PDA a (state, stack) where
+  data L PDA a (state, stack) = PDAL a state (Maybe stack) deriving (Show, Ord, Eq)
+  data R PDA a (state, stack) = PDAR state (PDAOp stack) deriving (Show, Ord, Eq)
+  data S PDA a (state, stack) = PDAS state (Data.Sequence.Seq stack) deriving (Show, Ord, Eq)
 
-type TransitionTable state stack = M.Map (state, Maybe stack) (M.Map Char (PDATransition () state stack))
+  action (PDAR newState NullOp) (PDAS _ stack) = PDAS newState stack
+  action (PDAR newState (Push x)) (PDAS _ stack) = PDAS newState (x Data.Sequence.<| stack)
+  action (PDAR newState Pop) (PDAS _ stack) = PDAS newState (Seq.drop 1 stack)
 
--- | Run a PDA on an input string
-runPDA :: (Ord state, Ord stack) => TransitionTable state stack -> [Char] -> state -> (Maybe state, Seq stack)
-runPDA table input initialState = go input initialState Seq.empty
-  where
-    go [] state stack = (Just state, stack)
-    go (c:cs) state stack =
-      case M.lookup (state, viewl stack) table >>= M.lookup c of
-        Just (PDATransition _ nextState op) ->
-          let stack' = case op of
-                         NullOp -> stack
-                         Push x -> x <| stack
-                         Pop    -> Seq.drop 1 stack
-          in go cs nextState stack'
-        Nothing -> (Nothing, stack)
-
-
--- | Generate a valid string from a grammar
-generateString :: (Ord state, Ord stack) => TransitionTable state stack -> state -> Seq stack -> Int -> IO (Maybe String)
-generateString table state stack maxDepth = go state stack [] 0
-  where
-    go state stack str depth
-      | depth > maxDepth = pure $ Just (reverse str)
-      | otherwise = do
-          let transitions = M.findWithDefault M.empty (state, viewl stack) table
-          if M.null transitions
-            then pure $ Just (reverse str)
-            else do
-              let inputs = M.keys transitions
-              i <- randomRIO (0, length inputs - 1)
-              let c = inputs !! i
-                  PDATransition _ nextState op = transitions M.! c
-                  stack' = case op of
-                             NullOp -> stack
-                             Push x -> x <| stack
-                             Pop    -> Seq.drop 1 stack
-              go nextState stack' (c:str) (depth + 1)
+  mkInput a (PDAS st sk) = PDAL a st (viewl sk)
 
 
 ----------
@@ -157,26 +170,27 @@ data Q =
   | QReject
   deriving (Eq, Show, Ord)
 
-buildTransitionTable :: TransitionTable Q Char
-buildTransitionTable = M.fromList [
-    ((Q0, Nothing),      M.fromList [('^', PDATransition () Q1 (Push '$'))]),
-    ((Q1, Just '$'),     M.fromList [('$', PDATransition () QAccept Pop),
-                                     ('a', PDATransition () Q1 (Push 'A'))]),
-    ((Q1, Just 'A'),     M.fromList [('a', PDATransition () Q1 (Push 'A')),
-                                     ('b', PDATransition () Q2 Pop)]),
-    ((Q2, Just 'A'),     M.fromList [('b', PDATransition () Q2 Pop)]),
-    ((Q2, Just '$'),     M.fromList [('$', PDATransition () QAccept Pop)])
+-- | Grammar for: a^nb^n
+anbnTransitions :: [(L PDA Char (Q, Char), R PDA a (Q, Char))]
+anbnTransitions = [
+    (PDAL '^' Q0 Nothing,    PDAR Q1 (Push '$')),
+    (PDAL '$' Q1 (Just '$'), PDAR QAccept Pop),
+    (PDAL 'a' Q1 (Just '$'), PDAR Q1 (Push 'A')),
+    (PDAL 'a' Q1 (Just 'A'), PDAR Q1 (Push 'A')),
+    (PDAL 'b' Q1 (Just 'A'), PDAR Q2 Pop),
+    (PDAL 'b' Q2 (Just 'A'), PDAR Q2 Pop),
+    (PDAL '$' Q2 (Just '$'), PDAR QAccept Pop)
   ]
 
 
 ----------
 -- * Go
 
-showSeq :: Show a => Seq a -> String
+showSeq :: Show a => Data.Sequence.Seq a -> String
 showSeq xs = "{" ++ intercalate ", " (show <$> toList xs) ++ "}"
 
-formatPDAResult :: (Maybe Q, Seq Char) -> String
-formatPDAResult (finalState, stack) =
+formatPDAResult :: (R PDA Char (Q, Char), S PDA Char (Q, Char)) -> String
+formatPDAResult (_, PDAS finalState stack) =
   "Final state: " ++ show finalState ++ " | Stack: " ++ showSeq stack
 
 main :: IO ()
@@ -185,7 +199,7 @@ main = do
   -- PDA
   putStrLn "----------"
   putStrLn "-- PDA"
-  let transitionTable = buildTransitionTable
+  let trans = M.fromList anbnTransitions
       exampleStrings = [
         "^aaabbb$",
         "^aabbb$",
@@ -193,13 +207,13 @@ main = do
         "^ab$",
         "^$"]
   putStrLn "PDA Example strings:"
-  mapM_ (putStrLn . formatPDAResult . (\x -> runPDA transitionTable x Q0)) exampleStrings
+  mapM_ (putStrLn . formatPDAResult . (\x -> runMachine trans (PDAS Q0 Seq.empty) x)) exampleStrings
 
-  -- Generate valid PDA strings
-  putStrLn "----------"
-  putStrLn "-- Generate valid PDA strings"
-  replicateM_ 5 $ do
-    result <- generateString transitionTable Q0 Seq.empty 100
-    case result of
-      Just str -> putStrLn str
-      Nothing  -> putStrLn "Failed to generate a valid PDA string"
+  -- -- Generate valid PDA strings
+  -- putStrLn "----------"
+  -- putStrLn "-- Generate valid PDA strings"
+  -- replicateM_ 5 $ do
+  --   result <- generateString transitionTable Q0 Seq.empty 100
+  --   case result of
+  --     Just str -> putStrLn str
+  --     Nothing  -> putStrLn "Failed to generate a valid PDA string"
