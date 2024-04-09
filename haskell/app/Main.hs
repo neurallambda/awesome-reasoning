@@ -51,43 +51,29 @@ Multi-tape, with k tapes:
 
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Main where
 
-import Data.Sequence (Seq, ViewL(..), (<|))
+import Data.Sequence ( Seq, ViewL(..), (<|), Seq(..), (|>) )
 import qualified Data.Sequence as Seq
-import Data.Foldable ( toList, foldl', find )
-import Data.List (intercalate, nub)
+import Data.Foldable ( toList, foldl' )
+import Data.List (intercalate)
 import qualified Data.Map as M
 import Data.Kind (Type)
 import Data.Map.Extra (lookupMatchAny, Any(..), MatchAny(..))
-import Control.Monad (guard)
-import qualified Data.Sequence as Seq
-import Data.Sequence (Seq(..), (|>))
 import Data.Maybe (mapMaybe)
-import Debug.Trace
-import Data.Sequence (Seq(..), (|>))
-
--- -- | Generate valid strings of the Left portion of the transition relation.
--- generateLs :: (Machine m a s, Ord (L m a s), MatchAny (L m a s))
---   => [(L m a s, R m a s)] -- transition relation
---   -> (S m a s -> Bool) -- halting function TODO: this could eventually be a MatchAnyable thing
---   -> [a] -- input symbols
---   -> S m a s -- initial state
---   -> [[L m a s]] -- lazy list of valid prefixes
--- generateLs transitions halt syms initialState = go initialState []
---   where
---     -- go :: S m a s
---     go state acc
---       | halt state = [acc]
---       | otherwise = do
---           a <- syms
---           let validTransitions = filter (\(l, _) -> matchAny l (mkL a state)) transitions
---           (l, r) <- validTransitions
---           let newState = action r state
---           if halt newState
---             then [acc]
---             else go newState (l : acc)
+import Data.Aeson
+import Data.ByteString (ByteString)
+import Data.Aeson.Types (Parser)
+import Data.Text (unpack)
+import qualified Data.Vector as Vector
+import qualified Data.Text as T
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as B8
+import Data.Either (fromRight)
 
 generateLs :: forall m a s. (Machine m a s, Ord (L m a s), MatchAny (L m a s))
   => [(L m a s, R m a s)] -- transition relation
@@ -108,78 +94,9 @@ generateLs transitions halt syms initialState = bfs [(initialState, Empty)]
           -- add new states and their accumulators to the queue
           newQueue = queue ++ validTransitions
           -- check if the current state is a halting state
-          haltingAccs = if halt state then [toList acc] else []
+          haltingAccs = [toList acc | halt state]
         in
           haltingAccs ++ bfs newQueue
-
--- generateLs :: forall m a s. (Machine m a s, Ord (L m a s), MatchAny (L m a s))
---   => [(L m a s, R m a s)] -- transition relation
---   -> (S m a s -> Bool) -- halting function
---   -> [a] -- input symbols
---   -> S m a s -- initial state
---   -> [[L m a s]] -- lazy list of valid prefixes
--- generateLs transitions halt syms initialState = bfs [(initialState, Empty)]
---   where
---     bfs :: [(S m a s, Seq (L m a s))] -> [[L m a s]]
---     bfs [] = []
---     bfs ((state, acc) : queue) = let
---           -- find all valid transitions for each input symbol
---           validTransitions = concatMap (\a ->
---             let ls = filter (\(l, _) -> matchAny l (mkL a state)) transitions
---             in map (\(l, r) -> (action r state, acc |> l)) ls
---             ) syms
---           -- add new states and their accumulators to the queue
---           newQueue = queue ++ validTransitions
---         in
---           -- if any new state is a halting state, convert its accumulator to list and return
---           -- otherwise, recursively search the updated queue
---           case find (halt . fst) validTransitions of
---             Just (_, acc') -> [toList acc']
---             Nothing -> toList acc : bfs newQueue
-
--- generateLs :: forall m a s. (Machine m a s, Ord (L m a s), MatchAny (L m a s))
---   => [(L m a s, R m a s)] -- transition relation
---   -> (S m a s -> Bool) -- halting function
---   -> [a] -- input symbols
---   -> S m a s -- initial state
---   -> [[L m a s]] -- lazy list of valid prefixes
--- generateLs transitions halt syms initialState = bfs [(initialState, Empty)]
---   where
---     bfs :: [(S m a s, Seq (L m a s))] -> [[L m a s]]
---     bfs [] = []
---     bfs ((state, acc) : queue)
---       | halt state = [toList acc]
---       | otherwise = let
---           -- find all valid transitions for each input symbol
---           validTransitions = concatMap (\a ->
---             let ls = filter (\(l, _) -> matchAny l (mkL a state)) transitions
---             in map (\(l, r) -> (action r state, acc |> l)) ls
---             ) syms
---           -- add new states and their accumulators to the queue
---           newQueue = queue ++ validTransitions
---         in
---           toList acc : bfs newQueue
-
--- generateLs :: forall m a s. (Machine m a s, Ord (L m a s), MatchAny (L m a s))
---   => [(L m a s, R m a s)] -- transition relation
---   -> (S m a s -> Bool) -- halting function
---   -> [a] -- input symbols
---   -> S m a s -- initial state
---   -> [[L m a s]] -- lazy list of valid prefixes
--- generateLs transitions halt syms initialState = filter (halt . fst) (bfs [(initialState, Empty)])
---   where
---     bfs :: [(S m a s, Seq (L m a s))] -> [(S m a s, Seq (L m a s))]
---     bfs [] = []
---     bfs ((state, acc) : queue) = (state, acc) : let
---           -- find all valid transitions for each input symbol
---           validTransitions = concatMap (\a ->
---             let ls = filter (\(l, _) -> matchAny l (mkL a state)) transitions
---             in map (\(l, r) -> (action r state, acc |> l)) ls
---             ) syms
---           -- add new states and their accumulators to the queue
---           newQueue = queue ++ validTransitions
---         in
---           bfs newQueue
 
 pdaString :: (Eq a
              , Ord a
@@ -238,11 +155,11 @@ runStep :: (Machine m a s, Ord (L m a s), Show (L m a s), MatchAny (L m a s))
   => M.Map (L m a s) (R m a s) -- transition table
   -> S m a s -- state
   -> a -- single input
-  -> (R m a s, S m a s) -- (transition value, new state)
+  -> Maybe (R m a s, S m a s) -- (transition value, new state)
 runStep table st input =
   case lookupMatchAny (mkL input st) table of
-    Just transition -> (transition, action transition st)
-    Nothing -> error $ "transition not found: " ++ show (mkL input st)
+    Just transition -> Just (transition, action transition st)
+    Nothing -> Nothing -- no transition found
 
 -- | Run a machine on a list of input symbols
 runMachine :: (Machine m a s
@@ -253,9 +170,11 @@ runMachine :: (Machine m a s
   => M.Map (L m a s) (R m a s) -- transition table
   -> S m a s -- initial state
   -> [a] -- input symbols
-  -> (R m a s, S m a s)
-runMachine table initialState = foldl' f (error "empty input", initialState)
-  where f (_, state) = runStep table state
+  -> Maybe (R m a s, S m a s)
+runMachine table initialState = foldl' f $ Just (error "empty input", initialState)
+  where
+    f (Just (_, state)) = runStep table state
+    f Nothing = const Nothing
 
 
 --------------------------------------------------
@@ -277,9 +196,117 @@ instance Machine PDA a (state, stack) where
 
   mkL a (PDAS st sk) = PDAL (A a) (A st) (A <$> viewl sk)
 
-
 instance (Eq state, Eq stack, Eq a) => MatchAny (L PDA a (state, stack)) where
   matchAny (PDAL x0 x1 x2) (PDAL y0 y1 y2) = matchAny (x0, x1, x2) (y0, y1, y2)
+
+
+----------
+-- * JSON
+
+newtype Transition = Transition (L PDA Char (Q, Char), R PDA Char (Q, Char))
+  deriving (Show, Eq)
+
+instance FromJSON Transition where
+  parseJSON = withArray "Transition" $ \arr -> do
+    input <- arr `parseAt` 0
+    fromState <- arr `parseAt` 1
+    stackTop <- arr `parseAt` 2
+    toState <- arr `parseAt` 3
+    action <- arr `parseAt` 4
+
+    l <- PDAL <$> parseInput input <*> pure (A fromState) <*> parseMaybeAny stackTop
+    r <- PDAR toState <$> parseAction action
+
+    return (Transition (l, r))
+
+    where
+      parseAt arr i = parseJSON (arr Vector.! i)
+
+      parseInput :: Value -> Parser (Any Char)
+      parseInput (String "^") = return (A '^')
+      parseInput (String "$") = return (A '$')
+      parseInput (String [c]) = return (A c)
+      parseInput other = fail $ "Invalid input: " ++ show other
+
+      parseMaybeAny :: Value -> Parser (Maybe (Any Char))
+      parseMaybeAny Null = return Nothing
+      parseMaybeAny v = do
+        c <- parseChar v
+        return (Just c)
+
+      parseChar :: Value -> Parser (Any Char)
+      parseChar = withText "Char" $ \t ->
+        case T.unpack t of
+          [c] -> return (A c)
+          other -> fail $ "Invalid character: " ++ other
+
+parseAction :: Value -> Parser (PDAOp Char)
+parseAction (String "nullop") = return NullOp
+parseAction (String "pop") = return Pop
+parseAction v = pushParser v
+  where
+    pushParser = withArray "Push" $ \arr -> do
+      op <- arr `parseAt` 0
+      case op of
+        String "push" -> do
+          symbol <- arr `parseAt` 1
+          case unpack symbol of
+            [c] -> return $ Push c
+            other -> fail $ "Invalid push symbol: " ++ other
+        _ -> fail "Invalid push action"
+
+    parseAt arr i = parseJSON (arr Vector.! i)
+
+parseTransitions :: ByteString -> Either String [Transition]
+parseTransitions = eitherDecodeStrict'
+
+-- exStr =
+-- [
+--   ["^", "Q0", null, "Q1", ["push", "$"]],
+--   ["$", "Q1", "$", "QAccept", "pop"],
+--   ["a", "Q1", "$", "Q1", ["push", "A"]],
+--   ["a", "Q1", "A", "Q1", ["push", "A"]],
+--   ["A", "Q1", "A", "Q1", ["push", "A"]],
+--   ["x", "Q1", "A", "Q2", "nullop"],
+--   ["b", "Q1", "A", "Q2", "pop"],
+--   ["b", "Q2", "A", "Q2", "pop"],
+--   ["$", "Q2", "$", "QAccept", "pop"]
+-- ]
+
+
+transitionTable :: String
+transitionTable = unlines
+  [ "["
+  , "  [\"^\", \"Q0\", null, \"Q1\", [\"push\", \"$\"]],"
+  , "  [\"$\", \"Q1\", \"$\", \"QAccept\", \"pop\"],"
+  , "  [\"a\", \"Q1\", \"$\", \"Q1\", [\"push\", \"A\"]],"
+  , "  [\"a\", \"Q1\", \"A\", \"Q1\", [\"push\", \"A\"]],"
+  , "  [\"A\", \"Q1\", \"A\", \"Q1\", [\"push\", \"A\"]],"
+  , "  [\"x\", \"Q1\", \"A\", \"Q2\", \"nullop\"],"
+  , "  [\"b\", \"Q1\", \"A\", \"Q2\", \"pop\"],"
+  , "  [\"b\", \"Q2\", \"A\", \"Q2\", \"pop\"],"
+  , "  [\"$\", \"Q2\", \"$\", \"QAccept\", \"pop\"]"
+  , "]"
+  ]
+
+
+anbnTransitions = unTransition <$> right
+  where
+    unTransition (Transition x) = x
+    Right right =  parseTransitions $ B8.pack transitionTable
+
+
+instance FromJSON Q where
+  parseJSON = withText "Q" $ \t ->
+    case t of
+      "Q0" -> return Q0
+      "Q1" -> return Q1
+      "Q2" -> return Q2
+      "Q3" -> return Q3
+      "Q4" -> return Q4
+      "QAccept" -> return QAccept
+      "QReject" -> return QReject
+      _ -> fail "Invalid Q value"
 
 
 ----------
@@ -293,28 +320,29 @@ data Q =
   | Q4
   | QAccept
   | QReject
-  deriving (Eq, Show, Ord)
+  deriving (Eq, Show, Ord, Read)
 
 instance MatchAny Q where matchAny x y = x == y
 
 
--- | Grammar for: a^nb^n
-anbnTransitions :: [(L PDA Char (Q, Char), R PDA a (Q, Char))]
-anbnTransitions = [
-    (PDAL (A '^') (A Q0) Nothing, PDAR Q1 (Push '$')),
-    (PDAL (A '$') (A Q1) (Just $ A '$'), PDAR QAccept Pop),
-    (PDAL (A 'a') (A Q1) (Just $ A '$'), PDAR Q1 (Push 'A')),
-    (PDAL (A 'a') (A Q1) (Just $ A 'A'), PDAR Q1 (Push 'A')),
-    (PDAL (A 'b') (A Q1) (Just $ A 'A'), PDAR Q2 Pop),
-    (PDAL (A 'b') (A Q2) (Just $ A 'A'), PDAR Q2 Pop),
-    (PDAL (A '$') (A Q2) (Just $ A '$'), PDAR QAccept Pop)
+-- -- | Grammar for: a^nb^n
+-- anbnTransitions :: [(L PDA Char (Q, Char), R PDA a (Q, Char))]
+-- anbnTransitions = [
+--     (PDAL (A '^') (A Q0) Nothing, PDAR Q1 (Push '$')),
+--     (PDAL (A '$') (A Q1) (Just $ A '$'), PDAR QAccept Pop),
+--     (PDAL (A 'a') (A Q1) (Just $ A '$'), PDAR Q1 (Push 'A')),
+--     (PDAL (A 'a') (A Q1) (Just $ A 'A'), PDAR Q1 (Push 'A')),
 
-    -- NOTE: These only work during parsing ie when transitions are ordered. For
-    --       string generation they don't really work.
-    --
-    -- (PDAL Any Any Nothing, PDAR QReject NullOp),
-    -- (PDAL Any Any (Just Any), PDAR QReject NullOp)
-  ]
+--     -- alternative A acts like a
+--     (PDAL (A 'A') (A Q1) (Just $ A 'A'), PDAR Q1 (Push 'A')),
+
+--     -- optional x in between
+--     (PDAL (A 'x') (A Q1) (Just $ A 'A'), PDAR Q2 NullOp),
+
+--     (PDAL (A 'b') (A Q1) (Just $ A 'A'), PDAR Q2 Pop),
+--     (PDAL (A 'b') (A Q2) (Just $ A 'A'), PDAR Q2 Pop),
+--     (PDAL (A '$') (A Q2) (Just $ A '$'), PDAR QAccept Pop)
+--   ]
 
 
 ----------
@@ -323,8 +351,9 @@ anbnTransitions = [
 showSeq :: Show a => Data.Sequence.Seq a -> String
 showSeq xs = "{" ++ intercalate ", " (show <$> toList xs) ++ "}"
 
-formatPDAResult :: (R PDA Char (Q, Char), S PDA Char (Q, Char)) -> String
-formatPDAResult (_, PDAS finalState stack) =
+formatPDAResult :: Maybe (R PDA Char (Q, Char), S PDA Char (Q, Char)) -> String
+formatPDAResult Nothing = "no transition found, and didn't reach halting state"
+formatPDAResult (Just (_, PDAS finalState stack)) =
   "Final state: " ++ show finalState ++ " | Stack: " ++ showSeq stack
 
 halt :: S PDA a (Q, stack) -> Bool
@@ -335,27 +364,24 @@ halt _ = False
 main :: IO ()
 main = do
 
-  -- -- PDA
-  -- putStrLn "----------"
-  -- putStrLn "-- PDA"
-  -- let trans = M.fromList anbnTransitions
-  --     exampleStrings = [
-  --       "^aaabbb$",
-  --       "^aabbb$",
-  --       "^aaabb$",
-  --       "^ab$",
-  --       "^$"]
-  -- putStrLn "PDA Example strings:"
-  -- mapM_ (putStrLn . formatPDAResult . runMachine trans (PDAS Q0 Seq.empty)) exampleStrings
+  -- PDA
+  putStrLn "----------"
+  putStrLn "-- PDA"
+  let trans = M.fromList anbnTransitions
+      exampleStrings = [
+        "^aaabbb$",
+        "^aabbb$",
+        "^aaabb$",
+        "^ab$",
+        "^$"] :: [String]
+  putStrLn "PDA Example strings:"
+  mapM_ (putStrLn . formatPDAResult . runMachine trans (PDAS Q0 Seq.empty)) exampleStrings
 
-  -- -- Generate valid PDA strings
-
-  let -- trans = M.fromList anbnTransitions
-      initialState = PDAS Q0 Seq.empty
-      inputSymbols = ['^', 'a', 'b', '$']
-      haltStates = [PDAS QReject Seq.empty] -- need Any, and need Functor instance for state
+  -- Generate valid PDA strings
+  let initialState = PDAS Q0 Seq.empty
+      inputSymbols = ['^', 'a', 'A', 'b', 'x', '$']
   let strings = pdaString anbnTransitions halt inputSymbols initialState
 
   putStrLn "generations:"
-  mapM_ print (take 10 strings)
+  mapM_ print (take 20 strings)
   putStrLn "done:"

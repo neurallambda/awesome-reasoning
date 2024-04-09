@@ -46,6 +46,10 @@ library
         mtl,
         containers,
         random,
+        bytestring,
+        vector,
+        text,
+        aeson
 
     -- Directories containing source files.
     hs-source-dirs:   src
@@ -72,6 +76,10 @@ executable haskell
         mtl,
         containers,
         random,
+        aeson,
+        bytestring,
+        vector,
+        text,
         neurallambda-data
 
     -- Directories containing source files.
