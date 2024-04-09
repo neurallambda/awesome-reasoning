@@ -56,11 +56,146 @@ module Main where
 
 import Data.Sequence (Seq, ViewL(..), (<|))
 import qualified Data.Sequence as Seq
-import Data.Foldable ( toList, foldl' )
-import Data.List (intercalate)
+import Data.Foldable ( toList, foldl', find )
+import Data.List (intercalate, nub)
 import qualified Data.Map as M
 import Data.Kind (Type)
 import Data.Map.Extra (lookupMatchAny, Any(..), MatchAny(..))
+import Control.Monad (guard)
+import qualified Data.Sequence as Seq
+import Data.Sequence (Seq(..), (|>))
+import Data.Maybe (mapMaybe)
+import Debug.Trace
+import Data.Sequence (Seq(..), (|>))
+
+-- -- | Generate valid strings of the Left portion of the transition relation.
+-- generateLs :: (Machine m a s, Ord (L m a s), MatchAny (L m a s))
+--   => [(L m a s, R m a s)] -- transition relation
+--   -> (S m a s -> Bool) -- halting function TODO: this could eventually be a MatchAnyable thing
+--   -> [a] -- input symbols
+--   -> S m a s -- initial state
+--   -> [[L m a s]] -- lazy list of valid prefixes
+-- generateLs transitions halt syms initialState = go initialState []
+--   where
+--     -- go :: S m a s
+--     go state acc
+--       | halt state = [acc]
+--       | otherwise = do
+--           a <- syms
+--           let validTransitions = filter (\(l, _) -> matchAny l (mkL a state)) transitions
+--           (l, r) <- validTransitions
+--           let newState = action r state
+--           if halt newState
+--             then [acc]
+--             else go newState (l : acc)
+
+generateLs :: forall m a s. (Machine m a s, Ord (L m a s), MatchAny (L m a s))
+  => [(L m a s, R m a s)] -- transition relation
+  -> (S m a s -> Bool) -- halting function
+  -> [a] -- input symbols
+  -> S m a s -- initial state
+  -> [[L m a s]] -- lazy list of valid prefixes
+generateLs transitions halt syms initialState = bfs [(initialState, Empty)]
+  where
+    bfs :: [(S m a s, Seq (L m a s))] -> [[L m a s]]
+    bfs [] = []
+    bfs ((state, acc) : queue) = let
+          -- find all valid transitions for each input symbol
+          validTransitions = concatMap (\a ->
+            let ls = filter (\(l, _) -> matchAny l (mkL a state)) transitions
+            in map (\(l, r) -> (action r state, acc |> l)) ls
+            ) syms
+          -- add new states and their accumulators to the queue
+          newQueue = queue ++ validTransitions
+          -- check if the current state is a halting state
+          haltingAccs = if halt state then [toList acc] else []
+        in
+          haltingAccs ++ bfs newQueue
+
+-- generateLs :: forall m a s. (Machine m a s, Ord (L m a s), MatchAny (L m a s))
+--   => [(L m a s, R m a s)] -- transition relation
+--   -> (S m a s -> Bool) -- halting function
+--   -> [a] -- input symbols
+--   -> S m a s -- initial state
+--   -> [[L m a s]] -- lazy list of valid prefixes
+-- generateLs transitions halt syms initialState = bfs [(initialState, Empty)]
+--   where
+--     bfs :: [(S m a s, Seq (L m a s))] -> [[L m a s]]
+--     bfs [] = []
+--     bfs ((state, acc) : queue) = let
+--           -- find all valid transitions for each input symbol
+--           validTransitions = concatMap (\a ->
+--             let ls = filter (\(l, _) -> matchAny l (mkL a state)) transitions
+--             in map (\(l, r) -> (action r state, acc |> l)) ls
+--             ) syms
+--           -- add new states and their accumulators to the queue
+--           newQueue = queue ++ validTransitions
+--         in
+--           -- if any new state is a halting state, convert its accumulator to list and return
+--           -- otherwise, recursively search the updated queue
+--           case find (halt . fst) validTransitions of
+--             Just (_, acc') -> [toList acc']
+--             Nothing -> toList acc : bfs newQueue
+
+-- generateLs :: forall m a s. (Machine m a s, Ord (L m a s), MatchAny (L m a s))
+--   => [(L m a s, R m a s)] -- transition relation
+--   -> (S m a s -> Bool) -- halting function
+--   -> [a] -- input symbols
+--   -> S m a s -- initial state
+--   -> [[L m a s]] -- lazy list of valid prefixes
+-- generateLs transitions halt syms initialState = bfs [(initialState, Empty)]
+--   where
+--     bfs :: [(S m a s, Seq (L m a s))] -> [[L m a s]]
+--     bfs [] = []
+--     bfs ((state, acc) : queue)
+--       | halt state = [toList acc]
+--       | otherwise = let
+--           -- find all valid transitions for each input symbol
+--           validTransitions = concatMap (\a ->
+--             let ls = filter (\(l, _) -> matchAny l (mkL a state)) transitions
+--             in map (\(l, r) -> (action r state, acc |> l)) ls
+--             ) syms
+--           -- add new states and their accumulators to the queue
+--           newQueue = queue ++ validTransitions
+--         in
+--           toList acc : bfs newQueue
+
+-- generateLs :: forall m a s. (Machine m a s, Ord (L m a s), MatchAny (L m a s))
+--   => [(L m a s, R m a s)] -- transition relation
+--   -> (S m a s -> Bool) -- halting function
+--   -> [a] -- input symbols
+--   -> S m a s -- initial state
+--   -> [[L m a s]] -- lazy list of valid prefixes
+-- generateLs transitions halt syms initialState = filter (halt . fst) (bfs [(initialState, Empty)])
+--   where
+--     bfs :: [(S m a s, Seq (L m a s))] -> [(S m a s, Seq (L m a s))]
+--     bfs [] = []
+--     bfs ((state, acc) : queue) = (state, acc) : let
+--           -- find all valid transitions for each input symbol
+--           validTransitions = concatMap (\a ->
+--             let ls = filter (\(l, _) -> matchAny l (mkL a state)) transitions
+--             in map (\(l, r) -> (action r state, acc |> l)) ls
+--             ) syms
+--           -- add new states and their accumulators to the queue
+--           newQueue = queue ++ validTransitions
+--         in
+--           bfs newQueue
+
+pdaString :: (Eq a
+             , Ord a
+             , Ord st
+             , Ord sk
+             , Show a, Show st, Show sk
+             )
+  => [(L PDA a (st, sk), R PDA a (st, sk))]
+  -> (S PDA a (st, sk) -> Bool) -- halting states
+  -> [a] -- input symbols (to possibly stand in for Any)
+  -> S PDA a (st, sk) -- initial state
+  -> [[a]]
+pdaString transitions haltStates syms initialState = mapMaybe (mapM f) (generateLs transitions haltStates syms initialState)
+  where
+    f (PDAL (A a) _ _) = Just a
+    f (PDAL Any _ _) = Nothing
 
 
 --------------------------------------------------
@@ -85,15 +220,18 @@ taker i s = snd $ splitAtR i s
 dropr :: Int -> Data.Sequence.Seq a -> Data.Sequence.Seq a
 dropr i s = fst $ splitAtR i s
 
+
 --------------------------------------------------
 -- * Machine Definition
 
 class Machine m a (s :: Type) where
-  data L m a s
-  data R m a s
-  data S m a s
+  data L m a s -- ^ the Left side of a delta function/relation
+  data R m a s -- ^ the Right side of a delta function/relation
+  data S m a s -- ^ the State of the Machine
+  -- | update the state (ex apply stack ops)
   action :: R m a s -> S m a s -> S m a s
-  mkInput :: a -> S m a s -> L m a s
+  -- | build an input (ex add a peek at the top of a stack)
+  mkL :: a -> S m a s -> L m a s
 
 -- | Run a machine on an input symbol
 runStep :: (Machine m a s, Ord (L m a s), Show (L m a s), MatchAny (L m a s))
@@ -102,9 +240,9 @@ runStep :: (Machine m a s, Ord (L m a s), Show (L m a s), MatchAny (L m a s))
   -> a -- single input
   -> (R m a s, S m a s) -- (transition value, new state)
 runStep table st input =
-  case lookupMatchAny (mkInput input st) table of
+  case lookupMatchAny (mkL input st) table of
     Just transition -> (transition, action transition st)
-    Nothing -> error $ "transition not found: " ++ show (mkInput input st)
+    Nothing -> error $ "transition not found: " ++ show (mkL input st)
 
 -- | Run a machine on a list of input symbols
 runMachine :: (Machine m a s
@@ -123,10 +261,11 @@ runMachine table initialState = foldl' f (error "empty input", initialState)
 --------------------------------------------------
 -- * Push down automata
 
-data PDA s
+data PDA
 
 data PDAOp stack = NullOp | Push !stack | Pop deriving (Eq, Ord, Show)
 
+--instance Machine PDA a (state, stack) where
 instance Machine PDA a (state, stack) where
   data L PDA a (state, stack) = PDAL (Any a) (Any state) (Maybe (Any stack)) deriving (Show, Ord, Eq)
   data R PDA a (state, stack) = PDAR state (PDAOp stack) deriving (Show, Ord, Eq)
@@ -136,7 +275,8 @@ instance Machine PDA a (state, stack) where
   action (PDAR newState (Push x)) (PDAS _ stack) = PDAS newState (x Data.Sequence.<| stack)
   action (PDAR newState Pop) (PDAS _ stack) = PDAS newState (Seq.drop 1 stack)
 
-  mkInput a (PDAS st sk) = PDAL (A a) (A st) (A <$> viewl sk)
+  mkL a (PDAS st sk) = PDAL (A a) (A st) (A <$> viewl sk)
+
 
 instance (Eq state, Eq stack, Eq a) => MatchAny (L PDA a (state, stack)) where
   matchAny (PDAL x0 x1 x2) (PDAL y0 y1 y2) = matchAny (x0, x1, x2) (y0, y1, y2)
@@ -167,10 +307,13 @@ anbnTransitions = [
     (PDAL (A 'a') (A Q1) (Just $ A 'A'), PDAR Q1 (Push 'A')),
     (PDAL (A 'b') (A Q1) (Just $ A 'A'), PDAR Q2 Pop),
     (PDAL (A 'b') (A Q2) (Just $ A 'A'), PDAR Q2 Pop),
-    (PDAL (A '$') (A Q2) (Just $ A '$'), PDAR QAccept Pop),
+    (PDAL (A '$') (A Q2) (Just $ A '$'), PDAR QAccept Pop)
 
-    (PDAL Any Any Nothing, PDAR QReject NullOp),
-    (PDAL Any Any (Just Any), PDAR QReject NullOp)
+    -- NOTE: These only work during parsing ie when transitions are ordered. For
+    --       string generation they don't really work.
+    --
+    -- (PDAL Any Any Nothing, PDAR QReject NullOp),
+    -- (PDAL Any Any (Just Any), PDAR QReject NullOp)
   ]
 
 
@@ -184,27 +327,35 @@ formatPDAResult :: (R PDA Char (Q, Char), S PDA Char (Q, Char)) -> String
 formatPDAResult (_, PDAS finalState stack) =
   "Final state: " ++ show finalState ++ " | Stack: " ++ showSeq stack
 
+halt :: S PDA a (Q, stack) -> Bool
+halt (PDAS QReject _) = True
+halt (PDAS QAccept _) = True
+halt _ = False
+
 main :: IO ()
 main = do
 
-  -- PDA
-  putStrLn "----------"
-  putStrLn "-- PDA"
-  let trans = M.fromList anbnTransitions
-      exampleStrings = [
-        "^aaabbb$",
-        "^aabbb$",
-        "^aaabb$",
-        "^ab$",
-        "^$"]
-  putStrLn "PDA Example strings:"
-  mapM_ (putStrLn . formatPDAResult . runMachine trans (PDAS Q0 Seq.empty)) exampleStrings
+  -- -- PDA
+  -- putStrLn "----------"
+  -- putStrLn "-- PDA"
+  -- let trans = M.fromList anbnTransitions
+  --     exampleStrings = [
+  --       "^aaabbb$",
+  --       "^aabbb$",
+  --       "^aaabb$",
+  --       "^ab$",
+  --       "^$"]
+  -- putStrLn "PDA Example strings:"
+  -- mapM_ (putStrLn . formatPDAResult . runMachine trans (PDAS Q0 Seq.empty)) exampleStrings
 
   -- -- Generate valid PDA strings
-  -- putStrLn "----------"
-  -- putStrLn "-- Generate valid PDA strings"
-  -- replicateM_ 5 $ do
-  --   result <- generateString transitionTable Q0 Seq.empty 100
-  --   case result of
-  --     Just str -> putStrLn str
-  --     Nothing  -> putStrLn "Failed to generate a valid PDA string"
+
+  let -- trans = M.fromList anbnTransitions
+      initialState = PDAS Q0 Seq.empty
+      inputSymbols = ['^', 'a', 'b', '$']
+      haltStates = [PDAS QReject Seq.empty] -- need Any, and need Functor instance for state
+  let strings = pdaString anbnTransitions halt inputSymbols initialState
+
+  putStrLn "generations:"
+  mapM_ print (take 10 strings)
+  putStrLn "done:"
