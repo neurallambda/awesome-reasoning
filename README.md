@@ -1,5 +1,9 @@
 # awesome-reasoning
 
+Adding reasoning to your AI? Take these datasets, they may help you on your way. <img src="sword.png" alt="Icon" style="vertical-align: middle; width: 1em; height: 1em;">
+
+
+
 
 
 | Name                            | Description                                | Link                                                                                    |
