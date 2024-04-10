@@ -1,4 +1,4 @@
-# Neurallambda Data: On Reasoning
+# awesome-reasoning
 
 **Purpose:** The [`neurallambda`](https://github.com/neurallambda/neurallambda) project needs to prove it is superior to traditional ML architectures, and so we need datasets for training and benchmarking. This repo tracks that data oriented effort of the `neurallamba` project.
 
