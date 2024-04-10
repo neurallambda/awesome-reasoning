@@ -1,17 +1,5 @@
 # awesome-reasoning
 
-**Purpose:** The [`neurallambda`](https://github.com/neurallambda/neurallambda) project needs to prove it is superior to traditional ML architectures, and so we need datasets for training and benchmarking. This repo tracks that data oriented effort of the `neurallamba` project.
-
-* **TODO:**
-  * [ ] Build toy data for variable-abstraction multi-hop problems
-  * [ ] Generate Wikidata Multi-hop Dataset
-  * [ ] Build NLP version of Raven's Progressive Matrices?
-  * [ ] Build NLP version of Wisconsin Card Sorting?
-
-
-## Data Landscape
-
-An attempt to understand the datasets that have come before us.
 
 
 | Name                            | Description                                | Link                                                                                    |
