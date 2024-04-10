@@ -373,26 +373,6 @@ data Q =
 instance MatchAny Q where matchAny x y = x == y
 
 
--- -- | Grammar for: a^nb^n
--- anbnTransitions :: [(L PDA Char (Q, Char), R PDA a (Q, Char))]
--- anbnTransitions = [
---     (PDAL (A '^') (A Q0) Nothing, PDAR Q1 (Push '$')),
---     (PDAL (A '$') (A Q1) (Just $ A '$'), PDAR QAccept Pop),
---     (PDAL (A 'a') (A Q1) (Just $ A '$'), PDAR Q1 (Push 'A')),
---     (PDAL (A 'a') (A Q1) (Just $ A 'A'), PDAR Q1 (Push 'A')),
-
---     -- alternative A acts like a
---     (PDAL (A 'A') (A Q1) (Just $ A 'A'), PDAR Q1 (Push 'A')),
-
---     -- optional x in between
---     (PDAL (A 'x') (A Q1) (Just $ A 'A'), PDAR Q2 NullOp),
-
---     (PDAL (A 'b') (A Q1) (Just $ A 'A'), PDAR Q2 Pop),
---     (PDAL (A 'b') (A Q2) (Just $ A 'A'), PDAR Q2 Pop),
---     (PDAL (A '$') (A Q2) (Just $ A '$'), PDAR QAccept Pop)
---   ]
-
-
 ----------
 -- * Go
 
@@ -408,28 +388,3 @@ halt :: S PDA a (Q, stack) -> Bool
 halt (PDAS QReject _) = True
 halt (PDAS QAccept _) = True
 halt _ = False
-
--- main :: IO ()
--- main = do
-
---   -- PDA
---   putStrLn "----------"
---   putStrLn "-- PDA"
---   let trans = M.fromList anbnTransitions
---       exampleStrings = [
---         "^aaabbb$",
---         "^aabbb$",
---         "^aaabb$",
---         "^ab$",
---         "^$"] :: [String]
---   putStrLn "PDA Example strings:"
---   mapM_ (putStrLn . formatPDAResult . runMachine trans (PDAS Q0 Seq.empty)) exampleStrings
-
---   -- Generate valid PDA strings
---   let initialState = PDAS Q0 Seq.empty
---       inputSymbols = ['^', 'a', 'A', 'b', 'x', '$']
---   let strings = pdaString anbnTransitions halt inputSymbols initialState
-
---   putStrLn "generations:"
---   mapM_ print (take 20 strings)
---   putStrLn "done:"
