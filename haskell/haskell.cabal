@@ -31,8 +31,8 @@ library
 
     -- Modules exported by the library.
     exposed-modules:
-      MyLib,
-      Data.Map.Extra
+      Data.Map.Extra,
+      Machine
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -80,6 +80,7 @@ executable haskell
         bytestring,
         vector,
         text,
+        optparse-applicative,
         neurallambda-data
 
     -- Directories containing source files.
