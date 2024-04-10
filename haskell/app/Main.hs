@@ -1,10 +1,10 @@
 {-
 
 USAGE:
-cabal run machine -- -i rules/palindrome.json -g 20
+cabal run machine -- -i rules/anbn.json -g 20
 # or
 cabal build
-dist/build/machine/machine --input input.json --generations 20
+dist/build/machine/machine --input anbn.json --generations 20
 -}
 
 {-# LANGUAGE RecordWildCards #-}
