@@ -282,9 +282,25 @@ instance FromJSON MachineSpec where
   parseJSON = withObject "MachineSpec" $ \obj -> do
     machine <- obj .: "machine"
     rules <- obj .: "rules"
-    symbols <- obj .: "symbols"
+    symbols <- obj .: "symbols" >>= parseSymbols
     transitions <- mapM parseJSON rules
     return (MachineSpec machine symbols transitions)
+    where
+      parseSymbols = withArray "symbols" $ \arr ->
+        mapM parseSymbol (toList arr)
+
+      parseSymbol = withText "Symbol" $ \t ->
+        case T.unpack t of
+          [c] -> return c
+          _ -> fail "Invalid symbol"
+
+-- instance FromJSON MachineSpec where
+--   parseJSON = withObject "MachineSpec" $ \obj -> do
+--     machine <- obj .: "machine"
+--     rules <- obj .: "rules"
+--     symbols <- obj .: "symbols"
+--     transitions <- mapM parseJSON rules
+--     return (MachineSpec machine symbols transitions)
 
 parseMachineSpec :: ByteString -> Either String MachineSpec
 parseMachineSpec = eitherDecodeStrict'

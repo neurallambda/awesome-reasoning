@@ -1,3 +1,12 @@
+{-
+
+USAGE:
+cabal run machine -- -i rules/palindrome.json -g 20
+# or
+cabal build
+dist/build/machine/machine --input input.json --generations 20
+-}
+
 {-# LANGUAGE RecordWildCards #-}
 
 module Main where

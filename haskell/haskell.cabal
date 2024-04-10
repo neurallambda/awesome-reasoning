@@ -57,7 +57,7 @@ library
     -- Base language which the package is written in.
     default-language: GHC2021
 
-executable haskell
+executable machine
     -- Import common warning flags.
     import:           warnings
 
