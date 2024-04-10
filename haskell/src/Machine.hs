@@ -260,6 +260,35 @@ parseAction v = pushParser v
 parseTransitions :: ByteString -> Either String [Transition]
 parseTransitions = eitherDecodeStrict'
 
+data MachineType = PDA | TM | DFA
+  deriving (Show, Eq)
+
+instance FromJSON MachineType where
+  parseJSON = withText "MachineType" $ \t ->
+    case t of
+      "pda" -> return PDA
+      "tm" -> return TM
+      "dfa" -> return DFA
+      _ -> fail "Invalid machine value"
+
+data MachineSpec = MachineSpec
+  { machine :: !MachineType
+  , symbols :: ![Char]
+  , rules :: ![Transition]
+  }
+  deriving (Show, Eq)
+
+instance FromJSON MachineSpec where
+  parseJSON = withObject "MachineSpec" $ \obj -> do
+    machine <- obj .: "machine"
+    rules <- obj .: "rules"
+    symbols <- obj .: "symbols"
+    transitions <- mapM parseJSON rules
+    return (MachineSpec machine symbols transitions)
+
+parseMachineSpec :: ByteString -> Either String MachineSpec
+parseMachineSpec = eitherDecodeStrict'
+
 -- exStr =
 -- [
 --   ["^", "Q0", null, "Q1", ["push", "$"]],
@@ -289,11 +318,14 @@ transitionTable = unlines
   , "]"
   ]
 
+untransition :: Functor f => f Transition -> f (L PDA Char (Q, Char), R PDA Char (Q, Char))
+untransition xs = f <$> xs
+  where f (Transition x) = x
 
-anbnTransitions = unTransition <$> right
-  where
-    unTransition (Transition x) = x
-    Right right =  parseTransitions $ B8.pack transitionTable
+-- anbnTransitions = unTransition <$> right
+--   where
+--     unTransition (Transition x) = x
+--     Right right =  parseTransitions $ B8.pack transitionTable
 
 
 instance FromJSON Q where
@@ -361,27 +393,27 @@ halt (PDAS QReject _) = True
 halt (PDAS QAccept _) = True
 halt _ = False
 
-main :: IO ()
-main = do
+-- main :: IO ()
+-- main = do
 
-  -- PDA
-  putStrLn "----------"
-  putStrLn "-- PDA"
-  let trans = M.fromList anbnTransitions
-      exampleStrings = [
-        "^aaabbb$",
-        "^aabbb$",
-        "^aaabb$",
-        "^ab$",
-        "^$"] :: [String]
-  putStrLn "PDA Example strings:"
-  mapM_ (putStrLn . formatPDAResult . runMachine trans (PDAS Q0 Seq.empty)) exampleStrings
+--   -- PDA
+--   putStrLn "----------"
+--   putStrLn "-- PDA"
+--   let trans = M.fromList anbnTransitions
+--       exampleStrings = [
+--         "^aaabbb$",
+--         "^aabbb$",
+--         "^aaabb$",
+--         "^ab$",
+--         "^$"] :: [String]
+--   putStrLn "PDA Example strings:"
+--   mapM_ (putStrLn . formatPDAResult . runMachine trans (PDAS Q0 Seq.empty)) exampleStrings
 
-  -- Generate valid PDA strings
-  let initialState = PDAS Q0 Seq.empty
-      inputSymbols = ['^', 'a', 'A', 'b', 'x', '$']
-  let strings = pdaString anbnTransitions halt inputSymbols initialState
+--   -- Generate valid PDA strings
+--   let initialState = PDAS Q0 Seq.empty
+--       inputSymbols = ['^', 'a', 'A', 'b', 'x', '$']
+--   let strings = pdaString anbnTransitions halt inputSymbols initialState
 
-  putStrLn "generations:"
-  mapM_ print (take 20 strings)
-  putStrLn "done:"
+--   putStrLn "generations:"
+--   mapM_ print (take 20 strings)
+--   putStrLn "done:"
