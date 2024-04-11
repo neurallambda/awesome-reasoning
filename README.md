@@ -36,13 +36,16 @@ Adding reasoning to your AI? Take these datasets, they may help you on your way.
 
 
 
-| **MATH/LOGIC**  |                                       |                                                                   |
-|-----------------|---------------------------------------|-------------------------------------------------------------------|
-| gsm8k           | Grade School Math 8k                  | [`[1]`](https://huggingface.co/datasets/gsm8k)                    |
-| MetaMath        | one-shot math                         | [`[1]`](https://github.com/meta-math/MetaMath)                    |
-| MetaMathFewShot | few-shot math                         | [`[1]`](https://huggingface.co/datasets/abacusai/MetaMathFewshot) |
-| MathPile        | 9B tok from filtered internet         | [`[1]`](https://huggingface.co/datasets/GAIR/MathPile)            |
-| LogiQA          | NL multi choice, requires abstraction | [`[1]`](https://github.com/lgw863/LogiQA-dataset)                 |
+| **MATH/LOGIC**  |                                                 |                                                                                 |
+|-----------------|-------------------------------------------------|---------------------------------------------------------------------------------|
+| gsm8k           | Grade School Math 8k                            | [`[1]`](https://huggingface.co/datasets/gsm8k)                                  |
+| MetaMath        | one-shot math                                   | [`[1]`](https://github.com/meta-math/MetaMath)                                  |
+| MetaMathFewShot | few-shot math                                   | [`[1]`](https://huggingface.co/datasets/abacusai/MetaMathFewshot)               |
+| MathPile        | 9B tok from filtered internet                   | [`[1]`](https://huggingface.co/datasets/GAIR/MathPile)                          |
+| LogiQA          | NL multi choice, requires abstraction           | [`[1]`](https://github.com/lgw863/LogiQA-dataset)                               |
+| Logic-LM        | a model combining auto theorem provers and llms | [`[1]`](https://github.com/teacherpeterpan/Logic-LLM)                           |
+| Coq Facts       | 270k cog theorem prover programs                | [`[1]`](https://huggingface.co/datasets/florath/coq-facts-props-proofs-gen0-v1) |
+
 
 
 
