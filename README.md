@@ -1,6 +1,12 @@
 # awesome-reasoning
-
-</br>
+<a href="https://x.com/neurallambda">
+  <img src="https://raster.shields.io/badge/follow-@neurallambda-blue.png?logo=x&color=BD2C00&labelColor=474240" alt="Follow on X" height="20">
+</a>
+&nbsp;&nbsp;
+<a href="https://discord.gg/HRrPTQn2Uf">
+  <img src="https://raster.shields.io/badge/discord-neurallambda-blue.png?logo=discord&logoColor=ffffff&color=BD2C00&labelColor=474240" alt="Join Discord" height="20">
+</a>
+</br></br>
 
 Adding reasoning to your AI? Take these datasets, they may help you on your way. <img src="sword.png" alt="Icon" style="vertical-align: middle; width: 1em; height: 1em;">
 
