@@ -90,3 +90,4 @@ Adding reasoning to your AI? Take these datasets, they may help you on your way.
 | wisconsin card sorting          |                                       |                                                                        |
 | anagram                         |                                       |                                                                        |
 | palindrome                      |                                       |                                                                        |
+| permutation composition | | |
