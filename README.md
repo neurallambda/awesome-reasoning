@@ -95,6 +95,8 @@ Adding reasoning to your AI? Take these resources, they may help you on your way
 | permutation composition | | |
 
 
+</br></br>
+
 ## Algorithms
 
 
