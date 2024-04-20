@@ -40,7 +40,10 @@ Adding reasoning to your AI? Take these datasets, they may help you on your way.
 | rosetta          | same program, many diff languages | [`[1]`](https://huggingface.co/datasets/cakiki/rosetta-code)      |
 | EvoEval Tool Use | 100 prompt + code + tests         | [`[1]`](https://huggingface.co/datasets/evoeval/EvoEval_tool_use) |
 
-
+| **TOKEN AUGMENTED REASONING** |                                                       |                                                                     |
+|-------------------------------|-------------------------------------------------------|---------------------------------------------------------------------|
+| Reasoning tokens              | Self-Reasoning Tokens, teaching models to think ahead | [`[1]`](https://reasoning-tokens.ghost.io/reasoning-tokens/)        |
+| Quiet-STaR                    | LLMs Can Teach Themselves to Think Before Speaking    | [`[1]`](https://github.com/ezelikman/quiet-star?tab=readme-ov-file) |
 
 | **MATH/LOGIC**  |                                                 |                                                                                 |
 |-----------------|-------------------------------------------------|---------------------------------------------------------------------------------|
