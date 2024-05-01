@@ -104,6 +104,7 @@ Adding reasoning to your AI? Take these resources, they may help you on your way
 |-------------------------------|-------------------------------------------------------|---------------------------------------------------------------------|
 | Reasoning tokens              | Self-Reasoning Tokens, teaching models to think ahead | [`[1]`](https://reasoning-tokens.ghost.io/reasoning-tokens/)        |
 | Quiet-STaR                    | LLMs Can Teach Themselves to Think Before Speaking    | [`[1]`](https://github.com/ezelikman/quiet-star?tab=readme-ov-file) |
+| Multi-token Prediction        |  Multi-token prediction is favorable for the development of induction heads and algorithmic reasoning capabilities | https://arxiv.org/abs/2404.19737 |
 
 </br></br>
 
