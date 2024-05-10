@@ -77,6 +77,7 @@ Adding reasoning to your AI? Take these resources, they may help you on your way
 
 | **TOY PROBLEMS**                |                                       |                                                                        |
 |---------------------------------|---------------------------------------|------------------------------------------------------------------------|
+| lichess-puzzles  | chess puzzles | [`[1]`](https://huggingface.co/datasets/EleutherAI/lichess-puzzles) |
 | Big Bench Hard                  | 23 challenges (only 6k datapoints)    | [`[1]`](https://github.com/suzgunmirac/BIG-Bench-Hard)                 |
 | logical entailment dataset      | logic strings by deepmind             | [`[1]`](https://huggingface.co/datasets/tasksource/logical-entailment) |
 | logical entailment dataset code | (generate it yourself)                | [`[1]`](https://github.com/google-deepmind/logical-entailment-dataset) |
