@@ -77,6 +77,7 @@ Adding reasoning to your AI? Take these resources, they may help you on your way
 
 | **TOY PROBLEMS**                |                                       |                                                                        |
 |---------------------------------|---------------------------------------|------------------------------------------------------------------------|
+| lambda calc + beta reductions | generator code, single+multistep | [`[1]`](https://github.com/jmflach/SymbolicLambda) |
 | lichess-puzzles  | chess puzzles | [`[1]`](https://huggingface.co/datasets/EleutherAI/lichess-puzzles) |
 | pointer net problems | convex hull, TSP, triangulation | [`[1]`](https://drive.google.com/drive/folders/0B2fg8yPGn2TCMzBtS0o4Q2RJaEU?resourcekey=0-46fqXNrTmcUA4MfT6GLcIg) |
 | Big Bench Hard                  | 23 challenges (only 6k datapoints)    | [`[1]`](https://github.com/suzgunmirac/BIG-Bench-Hard)                 |
