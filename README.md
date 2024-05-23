@@ -78,7 +78,7 @@ Adding reasoning to your AI? Take these resources, they may help you on your way
 | **TOY PROBLEMS**                |                                       |                                                                        |
 |---------------------------------|---------------------------------------|------------------------------------------------------------------------|
 | SCAN | systematicity, "$x to the left" | [`[1]`](https://arxiv.org/pdf/1711.00350) |
-| clevr | 2d img of 3d shapes + natural language QA | [`[1]`](https://www.tensorflow.org/datasets/catalog/clevr) |
+| clevr | 2d img of 3d shapes + natural language QA | [`[1]`](https://www.tensorflow.org/datasets/catalog/clevr) [`[2]`](https://github.com/nerdimite/relation-network/blob/master/data_generator.py) |
 | lambda calc + beta reductions | generator code, single+multistep | [`[1]`](https://github.com/jmflach/SymbolicLambda) |
 | lichess-puzzles  | chess puzzles | [`[1]`](https://huggingface.co/datasets/EleutherAI/lichess-puzzles) |
 | pointer net problems | convex hull, TSP, triangulation | [`[1]`](https://drive.google.com/drive/folders/0B2fg8yPGn2TCMzBtS0o4Q2RJaEU?resourcekey=0-46fqXNrTmcUA4MfT6GLcIg) |
