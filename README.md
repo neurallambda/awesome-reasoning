@@ -60,7 +60,7 @@ Adding reasoning to your AI? Take these resources, they may help you on your way
 | **NATURAL LANGUAGE**           |                                            |                                                                                         |
 |--------------------------------|--------------------------------------------|-----------------------------------------------------------------------------------------|
 | UltraInteract_sft              | GPT generated iterated reasoning dialogs   | [`[1]`](https://huggingface.co/datasets/openbmb/UltraInteract_sft)                      |
-| MUD videogames                 | (various could be training data)           |                                                                                         |
+| CoGnition | NL compositional generalization | [`[1]`](https://github.com/yafuly/CoGnition) |
 | Winogrande                     | ambiguous sentences, fill in 1 word        | [`[1]`](https://huggingface.co/datasets/winogrande)                                     |
 | Winograd_wsc                   | ambiguous sentences, choose the right word | [`[1]`](https://huggingface.co/datasets/winograd_wsc)                                   |
 | Contradiction                  | 2 phrases, do they contradict              | [`[1]`](https://www-nlp.stanford.edu/projects/contradiction/)                           |
@@ -72,12 +72,13 @@ Adding reasoning to your AI? Take these resources, they may help you on your way
 | Commonsense QA                 | muti choice QA                             | [`[1]`](https://allenai.org/data/commonsenseqa)                                         |
 | GLUE                           | several datasets                           | [`[1]`](https://huggingface.co/datasets/nyu-mll/glue)                                   |
 | custom multi-hop               | use wikipedia's graph of articles          |                                                                                         |
-
+| MUD videogames                 | (various could be training data)           |                                                                                         |
 
 
 | **TOY PROBLEMS**                |                                       |                                                                        |
 |---------------------------------|---------------------------------------|------------------------------------------------------------------------|
-| SCAN | systematicity, "$x to the left" | [`[1]`](https://arxiv.org/pdf/1711.00350) |
+| COGS | compositional generalization | [`[1]`](https://github.com/najoungkim/COGS) |
+| SCAN | systematicity, "$x to the left" | [`[1]`](https://github.com/brendenlake/SCAN) [`[2]`](https://arxiv.org/pdf/1711.00350) |
 | clevr | 2d img of 3d shapes + natural language QA | [`[1]`](https://www.tensorflow.org/datasets/catalog/clevr) [`[2]`](https://github.com/nerdimite/relation-network/blob/master/data_generator.py) |
 | lambda calc + beta reductions | generator code, single+multistep | [`[1]`](https://github.com/jmflach/SymbolicLambda) |
 | lichess-puzzles  | chess puzzles | [`[1]`](https://huggingface.co/datasets/EleutherAI/lichess-puzzles) |
