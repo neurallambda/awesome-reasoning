@@ -77,6 +77,10 @@ Adding reasoning to your AI? Take these resources, they may help you on your way
 
 | **TOY PROBLEMS**                |                                       |                                                                        |
 |---------------------------------|---------------------------------------|------------------------------------------------------------------------|
+| Match-To-Sample | cogsci test for relational reasoning | [`[1] MLPs Learn In Context`](https://arxiv.org/abs/2405.15618) |
+| Oddball Detection | cogsci test for relational reasoning | [`[1] MLPs Learn In Context`](https://arxiv.org/abs/2405.15618) |
+| regression | with incontext learning, good reasoning test | [`[1] MLPs Learn In Context`](https://arxiv.org/abs/2405.15618) |
+| clustering | with incontext learning, good reasoning test | [`[1] MLPs Learn In Context`](https://arxiv.org/abs/2405.15618) |
 | COGS | compositional generalization | [`[1]`](https://github.com/najoungkim/COGS) |
 | SCAN | systematicity, "$x to the left" | [`[1]`](https://github.com/brendenlake/SCAN) [`[2]`](https://arxiv.org/pdf/1711.00350) |
 | clevr | 2d img of 3d shapes + natural language QA | [`[1]`](https://www.tensorflow.org/datasets/catalog/clevr) [`[2]`](https://github.com/nerdimite/relation-network/blob/master/data_generator.py) |
