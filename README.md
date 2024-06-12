@@ -77,6 +77,7 @@ Adding reasoning to your AI? Take these resources, they may help you on your way
 
 | **TOY PROBLEMS**                |                                       |                                                                        |
 |---------------------------------|---------------------------------------|------------------------------------------------------------------------|
+| ARC | competition | [`[1]`](https://twitter.com/arcprize) |
 | expand polynomials  | algebraic expansion | [`[Abstractor]`](https://arxiv.org/pdf/2304.00195) |
 | linear eq | solve algebraic eqs | [`[Abstractor]`](https://arxiv.org/pdf/2304.00195) |
 | Match-To-Sample | cogsci test for relational reasoning | [`[1] MLPs Learn In Context`](https://arxiv.org/abs/2405.15618) |
