@@ -73,6 +73,7 @@ Adding reasoning to your AI? Take these resources, they may help you on your way
 | GLUE                           | several datasets                           | [`[1]`](https://huggingface.co/datasets/nyu-mll/glue)                                   |
 | custom multi-hop               | use wikipedia's graph of articles          |                                                                                         |
 | MUD videogames                 | (various could be training data)           |                                                                                         |
+| skunkworks/reasoning | wide variety of NL tasks | [`[1]`](https://huggingface.co/datasets/SkunkworksAI/reasoning-0.01) |
 
 
 | **TOY PROBLEMS**                |                                       |                                                                        |
