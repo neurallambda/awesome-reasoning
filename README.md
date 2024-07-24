@@ -78,6 +78,7 @@ Adding reasoning to your AI? Take these resources, they may help you on your way
 
 | **TOY PROBLEMS**                |                                       |                                                                        |
 |---------------------------------|---------------------------------------|------------------------------------------------------------------------|
+| arc-like | 1D visual puzzles, great seq reasoning | [`[1]`](https://github.com/neurallambda/arc-like) |
 | ARC | competition | [`[1]`](https://twitter.com/arcprize) |
 | (misc) | xLSTM paper lists several in appendix | [`[1]`](https://arxiv.org/pdf/2405.04517) |
 | expand polynomials  | algebraic expansion | [`[Abstractor]`](https://arxiv.org/pdf/2304.00195) |
