@@ -59,6 +59,7 @@ Adding reasoning to your AI? Take these resources, they may help you on your way
 
 | **NATURAL LANGUAGE**           |                                            |                                                                                         |
 |--------------------------------|--------------------------------------------|-----------------------------------------------------------------------------------------|
+| Nous Open Reasoning | community contrib tasks | [`[1]`](https://github.com/NousResearch/Open-Reasoning-Tasks) |
 | UltraInteract_sft              | GPT generated iterated reasoning dialogs   | [`[1]`](https://huggingface.co/datasets/openbmb/UltraInteract_sft)                      |
 | CoGnition | NL compositional generalization | [`[1]`](https://github.com/yafuly/CoGnition) |
 | Winogrande                     | ambiguous sentences, fill in 1 word        | [`[1]`](https://huggingface.co/datasets/winogrande)                                     |
